@@ -5,7 +5,6 @@ import calendar
 import plotly.express as px
 import plotly.graph_objects as go
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 from google.oauth2.service_account import Credentials
 from gspread.utils import rowcol_to_a1
 import json
