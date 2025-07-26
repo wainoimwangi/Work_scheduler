@@ -70,7 +70,7 @@ def generate_work_schedule(data, start_date_str, status_durations, priority_orde
         status_priority = priority_order.get("Status", [])
         constituency_rank = constituency_priority.index(row["Constituency"]) if row["Constituency"] in constituency_priority else len(constituency_priority)
         status_rank = status_priority.index(row["Status"]) if row["Status"] in status_priority else len(status_priority)
-        return (row["Team"], constituency_rank, status_rank, row["Scheme Name"])
+        return (str(row["Team"]), constituency_rank, status_rank, str(row["Scheme Name"]))
 
     data = data.copy()
     data["_priority"] = data.apply(get_priority, axis=1)
@@ -162,33 +162,35 @@ if uploaded_file and start_date_input:
     full_df = append_stay_totals(output_df)
     full_df["Start Date"] = full_df["Start Date"].dt.strftime("%Y-%m-%d")
     full_df["End Date"] = full_df["End Date"].dt.strftime("%Y-%m-%d")
-    st.write("### Generated Work Schedule")
-    st.dataframe(full_df)
 
-    with st.expander("### Calendar View by Scheme Name"):
-        # st.write("### Calendar View by Scheme Name")
-        cal_df = output_df.copy()
-        cal_df["Start Date"] = pd.to_datetime(cal_df["Start Date"])
-        cal_df["End Date"] = pd.to_datetime(cal_df["End Date"])
-        cal_expanded = []
-        for _, row in cal_df.iterrows():
-            for d in workdays_only(row["Start Date"], row["End Date"]):
-                cal_expanded.append({"Date": d, "Scheme Name": row["Scheme Name"], "Team": row["Team"]})
-        calendar_df = pd.DataFrame(cal_expanded)
-        calendar_df = calendar_df.sort_values("Date")
-        
-        pivot_df = calendar_df.pivot_table(index="Date", columns="Team", values="Scheme Name", aggfunc=lambda x: ', '.join(x))
-        pivot_df.reset_index(inplace=True) 
-        pivot_df["Date"] = pd.to_datetime(pivot_df["Date"])
-        pivot_df["Day"] = pivot_df["Date"].dt.day_name()
-        cols = pivot_df.columns.tolist()
-        if "Day" in cols and "Date" in cols:
-            cols.insert(cols.index("Date"), cols.pop(cols.index("Day")))
-            pivot_df = pivot_df[cols]
-        pivot_df["Date"] = pivot_df["Date"].dt.strftime("%Y-%m-%d")
-        st.dataframe(pivot_df)
 
-    output_file = "Work_Schedule_Output.xlsx"
-    full_df.to_excel(output_file, index=False)
-    with open(output_file, "rb") as f:
-        st.download_button("Download Excel File", f, file_name=output_file)
+    st.write("### Weekly Calendar Matrix View")
+    matrix_df = full_df.copy()
+    all_dates = pd.date_range(matrix_df["Start Date"].min(), matrix_df["End Date"].max(), freq="D")
+    calendar_matrix = pd.DataFrame(columns=all_dates.strftime("%Y-%m-%d"))
+    matrix_df = matrix_df.sort_values("Start Date")
+    # for constituency in sorted(matrix_df["Constituency"].unique()):
+    #     for scheme in sorted(matrix_df[matrix_df["Constituency"] == constituency]["Scheme Name"].unique()):
+    #         calendar_matrix.loc[f"{constituency} - {scheme}"] = ""
+    for constituency in matrix_df["Constituency"].unique():
+        for scheme in matrix_df[matrix_df["Constituency"] == constituency]["Scheme Name"].unique():
+            calendar_matrix.loc[f"{constituency} - {scheme}"] = ""
+
+    for _, row in matrix_df.iterrows():
+        days = pd.date_range(row["Start Date"], row["End Date"])
+        for d in days:
+            if d.weekday() != 6:
+                calendar_matrix.at[f"{row['Constituency']} - {row['Scheme Name']}", d.strftime("%Y-%m-%d")] = row["Team"]
+
+    calendar_matrix.fillna("", inplace=True)
+    st.dataframe(calendar_matrix.style.map(lambda v: "background-color: red" if v == "Team -1" else ("background-color: yellow" if v == "Team -2" else ("background-color: green" if v == "Team -3" else ("background-color: blue" if v == "Team -4" else "")))))
+
+
+    with st.expander("### Generated Work Schedule"):
+        st.write("### Generated Work Schedule")
+        st.dataframe(full_df)
+
+        output_file = "Work_Schedule_Output.xlsx"
+        full_df.to_excel(output_file, index=False)
+        with open(output_file, "rb") as f:
+            st.download_button("Download Excel File", f, file_name=output_file)
