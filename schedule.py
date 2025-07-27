@@ -200,13 +200,17 @@ with tab1:
 with tab2:
     # TASKS and durations
     TASKS = {
+        "LV Pole Hole Digging": 2,
+        "MV Pole Hole Digging and Pole erection": 1,
         "Stay and Strut Hole Digging": 2,
         "Stay and Strut Installation": 1,
         "Pole Dressing and Conductor Stringing": 2,
-        "PME Installation": 1
+        "PME Installation": 1,
+        "Shutdown": 1,
+        "Transformer Installation": 1 
     }
 
-    st.title("📅 Weekly Schedule Planner")
+    # st.title("📅 Weekly Schedule Planner")
 
     # with st.expander("Step 1: Select Scheme Names"):
     if uploaded_file:
@@ -256,11 +260,13 @@ with tab2:
                     current_start += timedelta(days=1)
 
         task_df = pd.DataFrame(assigned_tasks)
-
-        # Shutdown day per constituency
-        merged_df = pd.merge(task_df, weekly_df[["Scheme Name", "Constituency"]], on="Scheme Name", how="left")
-        last_days = merged_df.groupby("Constituency")["End Date"].max().reset_index().rename(columns={"End Date": "Shutdown Date"})
-        merged_df = pd.merge(merged_df, last_days, on="Constituency", how="left")
+        if not task_df.empty and "Scheme Name" in weekly_df.columns and "Constituency" in weekly_df.columns:
+            merged_df = pd.merge(task_df, weekly_df[["Scheme Name", "Constituency"]], on="Scheme Name", how="left")
+            last_days = merged_df.groupby("Constituency")["End Date"].max().reset_index().rename(columns={"End Date": "Shutdown Date"})
+            merged_df = pd.merge(merged_df, last_days, on="Constituency", how="left")
+        else:
+            st.warning("Please Select Tasks")
+            st.stop()
 
         # Mark calendar excluding shutdowns
         all_dates = pd.date_range(task_df["Start Date"].min(), task_df["End Date"].max(), freq="D")
