@@ -14,7 +14,7 @@ st.set_page_config(page_title="Smart Records",
                     layout='wide',
                     initial_sidebar_state='expanded')
 
-st.image("assets/diligent_header.png")
+st.image("assets/diligent_logo.png")
 # st.title("🏗️ Diligent Supplies Limited - Store Management System")
 with open("assets/styles.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
@@ -128,7 +128,7 @@ def append_stay_totals(output_df):
 
 tab1, tab2 = st.tabs(["Tentative Schedule", "Weekly Schedule"])
 with tab1:
-    st.title("Work Schedule Generator")
+    # st.title("Work Schedule Generator")
 
     uploaded_file = st.file_uploader("Upload Excel file with columns: 'Team', 'Constituency', 'Scheme Name', 'Status' or 'Duration (Days)'", type=["xlsx"])
     start_date_input = st.date_input("Select the starting date")
@@ -208,10 +208,14 @@ with tab2:
 
     st.title("📅 Weekly Schedule Planner")
 
-    with st.expander("Step 1: Select Scheme Names"):
+    # with st.expander("Step 1: Select Scheme Names"):
+    if uploaded_file:
         weekly_df = pd.read_excel(uploaded_file)
         scheme_names = weekly_df["Scheme Name"].dropna().unique().tolist()
         selected_schemes = st.multiselect("Choose Scheme Names", scheme_names)
+    else:
+        st.warning("Please upload an Excel file to continue.")
+        selected_schemes = []
 
     if selected_schemes:
         assigned_tasks = []

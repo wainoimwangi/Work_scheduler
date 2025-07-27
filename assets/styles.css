@@ -2,6 +2,12 @@
 [data-testid="stHeader"] {
     height: 0%;
 }
+[data-testid="stFullScreenFrame"] {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 /*style the Tabs*/
 [data-testid="stTab"] {
     background-color: #3a9fbf;
